@@ -239,16 +239,17 @@ async def load_symbols():
     return [s for s in markets.keys() if ":" not in s], markets
 
 async def main():
-    global last_cycle_time
+    print("🚀 Запуск бота")
     telegram_app.add_handler(CommandHandler("balance", balance_command))
     telegram_app.add_handler(CommandHandler("status", status_command))
     await telegram_app.initialize()
     await telegram_app.start()
     await send_telegram_message("♻️ Бот запущен и готов к реальной торговле")
 
-    symbols, markets = await load_symbols()
+    symbols, markets = await exchange.load_markets()
     start_coins = ['USDT']
     triangles = []
+
     for base in start_coins:
         for s1 in symbols:
             if not s1.endswith('/' + base): continue
@@ -260,8 +261,9 @@ async def main():
                     triangles.append((base, mid1, mid2))
 
     while not is_shutting_down:
+        global last_cycle_time
         last_cycle_time = datetime.now(timezone.utc)
-        print(f"\n🔄 Новый цикл: {last_cycle_time.strftime('%Y-%m-%d %H:%M:%S')} | Треугольников: {len(triangles)}")
+        print(f"\n🔁 Цикл: {last_cycle_time.strftime('%Y-%m-%d %H:%M:%S')} | Найдено: {len(triangles)} маршрутов")
         await asyncio.gather(*[check_triangle(b, m1, m2, symbols, markets) for b, m1, m2 in triangles])
         await asyncio.sleep(10)
 
